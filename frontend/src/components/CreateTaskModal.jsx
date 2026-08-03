@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../api/axiosInstance';
 import { X, PlusCircle, AlertCircle } from 'lucide-react';
 
 const INITIAL_FORM_STATE = {
@@ -38,7 +38,7 @@ export const CreateTaskModal = ({ isOpen, onClose, boardId, onTaskCreated, teamM
     }
 
     if (!boardId || boardId === 'DEFAULT_BOARD_ID') {
-      newErrors.submit = 'Invalid Board selected. Please refresh the page.';
+      newErrors.submit = 'No active board found. Please select or create a board first.';
     }
 
     setErrors(newErrors);
@@ -59,11 +59,6 @@ export const CreateTaskModal = ({ isOpen, onClose, boardId, onTaskCreated, teamM
 
     setLoading(true);
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-      
-      // Get token from localStorage (fallback for cross-domain cookie restrictions)
-      const token = localStorage.getItem('token');
-
       const payload = {
         ...formData,
         boardId,
@@ -71,16 +66,7 @@ export const CreateTaskModal = ({ isOpen, onClose, boardId, onTaskCreated, teamM
         dueDate: formData.dueDate ? formData.dueDate : null,
       };
 
-      const response = await axios.post(
-        `${API_BASE_URL}/tasks`,
-        payload,
-        {
-          headers: {
-            ...(token && { Authorization: `Bearer ${token}` }),
-          },
-          withCredentials: true,
-        }
-      );
+      const response = await api.post('/tasks', payload);
 
       onTaskCreated(response.data.data);
       setFormData(INITIAL_FORM_STATE);

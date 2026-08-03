@@ -5,12 +5,9 @@ import CustomError from '../utils/customError.js';
 export const protect = async (req, res, next) => {
   let token;
 
-  // 1. Check Authorization header (Bearer <token>)
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     token = req.headers.authorization.split(' ')[1];
-  } 
-  // 2. Fallback to cookie
-  else if (req.cookies && req.cookies.token) {
+  } else if (req.cookies && req.cookies.token) {
     token = req.cookies.token;
   }
 

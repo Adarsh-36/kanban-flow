@@ -7,7 +7,6 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// Intercept every request and inject the Bearer token if present
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');

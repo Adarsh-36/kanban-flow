@@ -9,9 +9,9 @@ export const generateAndSetTokens = (res, userId) => {
 
   res.cookie('token', token, {
     httpOnly: true,
-    secure: isProduction, // Must be true in production for HTTPS cross-domain cookies
-    sameSite: isProduction ? 'none' : 'lax', // Must be 'none' for cross-domain Vercel apps
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
+    maxAge: 30 * 24 * 60 * 60 * 1000,
   });
 
   return token;

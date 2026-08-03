@@ -7,16 +7,13 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Check auth health status on mount
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await api.get('/auth/me', {
-          headers: {
-            ...(token && { Authorization: `Bearer ${token}` }),
-          },
-        });
+        if (!token) throw new Error('No token');
+        
+        const res = await api.get('/auth/me');
         setUser(res.data.data);
       } catch (err) {
         localStorage.removeItem('token');
@@ -31,7 +28,6 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     const res = await api.post('/auth/login', { email, password });
     
-    // Save token if returned in response payload
     const token = res.data.token || res.data.data?.token;
     if (token) {
       localStorage.setItem('token', token);

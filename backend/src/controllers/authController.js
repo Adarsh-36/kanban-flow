@@ -3,11 +3,6 @@ import User from '../models/User.js';
 import { generateAndSetTokens } from '../utils/generateToken.js';
 import CustomError from '../utils/customError.js';
 
-/**
- * @desc    Register new user
- * @route   POST /api/auth/register
- * @access  Public
- */
 export const registerUser = async (req, res, next) => {
   try {
     const { name, email, password, role } = req.body;
@@ -21,7 +16,6 @@ export const registerUser = async (req, res, next) => {
       throw new CustomError('User already exists with this email', 400);
     }
 
-    // Hash password with bcrypt
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
@@ -32,10 +26,11 @@ export const registerUser = async (req, res, next) => {
       role: role || 'MEMBER',
     });
 
-    generateAndSetTokens(res, user._id);
+    const token = generateAndSetTokens(res, user._id);
 
     res.status(201).json({
       success: true,
+      token,
       data: {
         _id: user._id,
         name: user.name,
@@ -48,11 +43,6 @@ export const registerUser = async (req, res, next) => {
   }
 };
 
-/**
- * @desc    Authenticate user & get token in cookie
- * @route   POST /api/auth/login
- * @access  Public
- */
 export const loginUser = async (req, res, next) => {
   try {
     const { email, password } = req.body;
@@ -71,10 +61,11 @@ export const loginUser = async (req, res, next) => {
       throw new CustomError('Invalid credentials', 401);
     }
 
-    generateAndSetTokens(res, user._id);
+    const token = generateAndSetTokens(res, user._id);
 
     res.status(200).json({
       success: true,
+      token,
       data: {
         _id: user._id,
         name: user.name,
@@ -87,11 +78,6 @@ export const loginUser = async (req, res, next) => {
   }
 };
 
-/**
- * @desc    Get currently logged-in user profile
- * @route   GET /api/auth/me
- * @access  Private
- */
 export const getMe = async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id).select('-passwordHash');
@@ -108,17 +94,12 @@ export const getMe = async (req, res, next) => {
   }
 };
 
-/**
- * @desc    Logout user / Clear Cookie
- * @route   POST /api/auth/logout
- * @access  Private
- */
 export const logoutUser = (req, res) => {
   const isProduction = process.env.NODE_ENV === 'production';
 
   const cookieOptions = {
     httpOnly: true,
-    expires: new Date(0), // Instantly expire cookie
+    expires: new Date(0),
     sameSite: isProduction ? 'none' : 'lax',
     secure: isProduction,
   };
