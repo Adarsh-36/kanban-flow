@@ -9,17 +9,33 @@ import taskRoutes from './routes/taskRoutes.js';
 
 const app = express();
 
-// 1. CORS Configuration for HTTP-Only Cookie Support
-const ALLOWED_ORIGIN = process.env.CLIENT_URL || 'http://localhost:5173';
+// 1. Allowed Origins List for Robust CORS
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  'https://kanban-flow-gamma.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000',
+].filter(Boolean); // Remove undefined values if CLIENT_URL isn't set
 
-app.use(
-  cors({
-    origin: ALLOWED_ORIGIN,
-    credentials: true, // Required for HTTP-Only cookies across origins
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  })
-);
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like Postman, mobile apps, or server-to-server)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true, // Required for HTTP-Only cookies across origins
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+};
+
+// Apply CORS globally
+app.use(cors(corsOptions));
+
+// Explicitly handle preflight OPTIONS requests across all endpoints
+app.options('*', cors(corsOptions));
 
 // 2. Request Parsing Middlewares
 app.use(express.json());
@@ -36,7 +52,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/boards', boardRoutes);
 app.use('/api/tasks', taskRoutes);
 
-// 5. 44 Route Not Found Handler
+// 5. 404 Route Not Found Handler
 app.use((req, res, next) => {
   res.status(404).json({
     success: false,
