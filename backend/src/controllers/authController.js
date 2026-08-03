@@ -88,6 +88,27 @@ export const loginUser = async (req, res, next) => {
 };
 
 /**
+ * @desc    Get currently logged-in user profile
+ * @route   GET /api/auth/me
+ * @access  Private
+ */
+export const getMe = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id).select('-passwordHash');
+    if (!user) {
+      throw new CustomError('User not found', 404);
+    }
+
+    res.status(200).json({
+      success: true,
+      data: user,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * @desc    Logout user / Clear Cookie
  * @route   POST /api/auth/logout
  * @access  Private
@@ -95,20 +116,15 @@ export const loginUser = async (req, res, next) => {
 export const logoutUser = (req, res) => {
   const isProduction = process.env.NODE_ENV === 'production';
 
-  res.cookie('token', '', {
+  const cookieOptions = {
     httpOnly: true,
     expires: new Date(0), // Instantly expire cookie
     sameSite: isProduction ? 'none' : 'lax',
     secure: isProduction,
-  });
+  };
 
-  // Clear 'jwt' as fallback if used anywhere else
-  res.cookie('jwt', '', {
-    httpOnly: true,
-    expires: new Date(0),
-    sameSite: isProduction ? 'none' : 'lax',
-    secure: isProduction,
-  });
+  res.cookie('token', '', cookieOptions);
+  res.cookie('jwt', '', cookieOptions);
 
   res.status(200).json({
     success: true,
