@@ -3,36 +3,29 @@ import User from '../models/User.js';
 import CustomError from '../utils/customError.js';
 
 export const protect = async (req, res, next) => {
+  let token;
+
+  // 1. Check Authorization header (Bearer <token>)
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    token = req.headers.authorization.split(' ')[1];
+  } 
+  // 2. Fallback to cookie
+  else if (req.cookies && req.cookies.token) {
+    token = req.cookies.token;
+  }
+
+  if (!token) {
+    return next(new CustomError('Not authorized, token missing', 401));
+  }
+
   try {
-    let token = req.cookies.jwt;
-
-    // Optional fallback: Check Bearer token in Authorization header
-    if (!token && req.headers.authorization?.startsWith('Bearer')) {
-      token = req.headers.authorization.split(' ')[1];
-    }
-
-    if (!token) {
-      throw new CustomError('Not authorized, token missing', 401);
-    }
-
-    // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    // Attach user to req object excluding passwordHash
     req.user = await User.findById(decoded.id).select('-passwordHash');
-
     if (!req.user) {
-      throw new CustomError('User not found or account deactivated', 401);
+      return next(new CustomError('User not found', 404));
     }
-
     next();
   } catch (error) {
-    if (error.name === 'JsonWebTokenError') {
-      return next(new CustomError('Invalid token authorization', 401));
-    }
-    if (error.name === 'TokenExpiredError') {
-      return next(new CustomError('Token expired, please login again', 401));
-    }
-    next(error);
+    return next(new CustomError('Not authorized, token invalid', 401));
   }
 };

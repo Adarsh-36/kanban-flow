@@ -11,9 +11,15 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await api.get('/auth/me');
+        const token = localStorage.getItem('token');
+        const res = await api.get('/auth/me', {
+          headers: {
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+        });
         setUser(res.data.data);
       } catch (err) {
+        localStorage.removeItem('token');
         setUser(null);
       } finally {
         setLoading(false);
@@ -24,12 +30,25 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     const res = await api.post('/auth/login', { email, password });
+    
+    // Save token if returned in response payload
+    const token = res.data.token || res.data.data?.token;
+    if (token) {
+      localStorage.setItem('token', token);
+    }
+
     setUser(res.data.data);
   };
 
   const logout = async () => {
-    await api.post('/auth/logout');
-    setUser(null);
+    try {
+      await api.post('/auth/logout');
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      localStorage.removeItem('token');
+      setUser(null);
+    }
   };
 
   return (

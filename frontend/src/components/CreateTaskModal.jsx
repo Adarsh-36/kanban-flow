@@ -37,6 +37,10 @@ export const CreateTaskModal = ({ isOpen, onClose, boardId, onTaskCreated, teamM
       }
     }
 
+    if (!boardId || boardId === 'DEFAULT_BOARD_ID') {
+      newErrors.submit = 'Invalid Board selected. Please refresh the page.';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -56,6 +60,9 @@ export const CreateTaskModal = ({ isOpen, onClose, boardId, onTaskCreated, teamM
     setLoading(true);
     try {
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+      
+      // Get token from localStorage (fallback for cross-domain cookie restrictions)
+      const token = localStorage.getItem('token');
 
       const payload = {
         ...formData,
@@ -67,7 +74,12 @@ export const CreateTaskModal = ({ isOpen, onClose, boardId, onTaskCreated, teamM
       const response = await axios.post(
         `${API_BASE_URL}/tasks`,
         payload,
-        { withCredentials: true }
+        {
+          headers: {
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+          withCredentials: true,
+        }
       );
 
       onTaskCreated(response.data.data);
