@@ -50,7 +50,7 @@ export const Login = () => {
         </h2>
         <p className="text-xs text-slate-500 mb-4">
           {isRegistering
-            ? 'Enter your details to register in MongoDB'
+            ? 'Enter your details to register'
             : 'Enter your credentials to access your board'}
         </p>
 
