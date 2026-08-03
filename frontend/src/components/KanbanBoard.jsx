@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   DndContext,
   PointerSensor,
@@ -19,9 +19,14 @@ const COLUMNS = [
   { id: 'COMPLETED', title: 'Completed' },
 ];
 
-export const KanbanBoard = ({ initialTasks, boardId }) => {
+export const KanbanBoard = ({ initialTasks = [], boardId }) => {
   const [tasks, setTasks] = useState(initialTasks);
   const [activeTask, setActiveTask] = useState(null);
+
+  // Sync state if initialTasks prop updates from parent (e.g. after task creation)
+  useEffect(() => {
+    setTasks(initialTasks);
+  }, [initialTasks]);
 
   // Configure sensors to allow subtle clicks without accidentally triggering drags
   const sensors = useSensors(
@@ -59,7 +64,6 @@ export const KanbanBoard = ({ initialTasks, boardId }) => {
       destinationStatus = overId;
     }
 
-    const sourceStatus = currentTask.status;
     const previousSnapshot = [...tasks]; // Snapshot for optimistic rollback
 
     // Calculate new position
@@ -84,10 +88,12 @@ export const KanbanBoard = ({ initialTasks, boardId }) => {
       return updatedTasks;
     });
 
-    // 2. BACKEND API CALL WITH ROLLBACK
+    // 2. BACKEND API CALL WITH DYNAMIC BASE URL & ROLLBACK
     try {
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+
       await axios.patch(
-        `http://localhost:5000/api/tasks/${activeId}/move`,
+        `${API_BASE_URL}/tasks/${activeId}/move`,
         {
           destinationStatus,
           newPosition,
@@ -117,7 +123,7 @@ export const KanbanBoard = ({ initialTasks, boardId }) => {
             title={col.title}
             tasks={tasks
               .filter((t) => t.status === col.id)
-              .sort((a, b) => a.position - b.position)}
+              .sort((a, b) => (a.position || 0) - (b.position || 0))}
           />
         ))}
       </div>

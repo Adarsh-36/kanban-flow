@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { X, PlusCircle, Calendar, AlignLeft, AlertCircle } from 'lucide-react';
+import { X, PlusCircle, AlertCircle } from 'lucide-react';
 
 const INITIAL_FORM_STATE = {
   title: '',
@@ -17,7 +17,6 @@ export const CreateTaskModal = ({ isOpen, onClose, boardId, onTaskCreated, teamM
 
   if (!isOpen) return null;
 
-  // Client-side Form Validation
   const validateForm = () => {
     const newErrors = {};
 
@@ -28,9 +27,11 @@ export const CreateTaskModal = ({ isOpen, onClose, boardId, onTaskCreated, teamM
     }
 
     if (formData.dueDate) {
-      const selectedDate = new Date(formData.dueDate);
+      const [year, month, day] = formData.dueDate.split('-').map(Number);
+      const selectedDate = new Date(year, month - 1, day);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+
       if (selectedDate < today) {
         newErrors.dueDate = 'Due date cannot be in the past.';
       }
@@ -43,7 +44,6 @@ export const CreateTaskModal = ({ isOpen, onClose, boardId, onTaskCreated, teamM
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear field-specific error as user types
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: null }));
     }
@@ -55,19 +55,22 @@ export const CreateTaskModal = ({ isOpen, onClose, boardId, onTaskCreated, teamM
 
     setLoading(true);
     try {
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+
       const payload = {
         ...formData,
         boardId,
         assignedTo: formData.assignedTo || null,
+        dueDate: formData.dueDate ? formData.dueDate : null,
       };
 
       const response = await axios.post(
-        'http://localhost:5000/api/tasks',
+        `${API_BASE_URL}/tasks`,
         payload,
         { withCredentials: true }
       );
 
-      onTaskCreated(response.data.data); // Notify parent component to update state
+      onTaskCreated(response.data.data);
       setFormData(INITIAL_FORM_STATE);
       onClose();
     } catch (err) {
@@ -84,7 +87,7 @@ export const CreateTaskModal = ({ isOpen, onClose, boardId, onTaskCreated, teamM
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
       <div className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         
-        {/* Modal Header */}
+        {/* Header */}
         <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50">
           <div className="flex items-center gap-2 font-semibold text-slate-800 text-base">
             <PlusCircle className="text-indigo-600" size={20} />
@@ -109,7 +112,7 @@ export const CreateTaskModal = ({ isOpen, onClose, boardId, onTaskCreated, teamM
             </div>
           )}
 
-          {/* Task Title */}
+          {/* Title */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
               Title <span className="text-red-500">*</span>
@@ -146,7 +149,7 @@ export const CreateTaskModal = ({ isOpen, onClose, boardId, onTaskCreated, teamM
             />
           </div>
 
-          {/* Status & Due Date Row */}
+          {/* Status & Due Date */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -206,7 +209,7 @@ export const CreateTaskModal = ({ isOpen, onClose, boardId, onTaskCreated, teamM
             </select>
           </div>
 
-          {/* Form Actions */}
+          {/* Actions */}
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 mt-6">
             <button
               type="button"
