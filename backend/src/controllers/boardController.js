@@ -2,7 +2,37 @@ import mongoose from 'mongoose';
 import Task from '../models/Task.js';
 import ActivityLog from '../models/ActivityLog.js'; // Added ActivityLog import
 import CustomError from '../utils/customError.js';
+import Board from '../models/Board.js';
 
+/**
+ * @desc    Get user boards (Auto-creates one if none exist)
+ * @route   GET /api/boards
+ * @access  Private
+ */
+export const getBoards = async (req, res, next) => {
+  try {
+    let boards = await Board.find({
+      $or: [{ owner: req.user._id }, { members: req.user._id }],
+    });
+
+    // AUTO-FALLBACK: If user has 0 boards, create a default board immediately
+    if (!boards || boards.length === 0) {
+      const defaultBoard = await Board.create({
+        title: 'Main Project Board',
+        owner: req.user._id,
+        members: [req.user._id],
+      });
+      boards = [defaultBoard];
+    }
+
+    res.status(200).json({
+      success: true,
+      data: boards,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 /**
  * @desc    Get aggregated real-time analytics for a specific board
  * @route   GET /api/boards/:id/analytics
